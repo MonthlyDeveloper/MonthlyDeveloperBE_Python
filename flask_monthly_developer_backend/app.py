@@ -1,7 +1,7 @@
 from flask import Flask
 from flask_restx import Api
+
 from controller import recruit_board
-from controller import connector
 
 from config import config
 from config import db_connector
@@ -20,6 +20,5 @@ def create_env():
 
     # namespace를 추가합니다.
     api.add_namespace(recruit_board.Recruit, '/recruit')
-    api.add_namespace(connector.db_ns, '/db_test')
     return app
 
