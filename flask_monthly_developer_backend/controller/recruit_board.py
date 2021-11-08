@@ -29,6 +29,14 @@ class RecruitPostCreate(Resource):
         # 응답을 위한 Dict
         new_post_res = {}
 
+        # 게시글의 고유 아이디 정보
+        # 게시글 고유 아이디는 게시글의 등록 순서를 의미
+        # 현재 k번 게시글까지 있다고 가정하였을 때 새롭게 등록될 게시글은 k+1번째 게시글임
+        counter_db = db_connector.mongo.db.counter
+        recruit_post_number = counter_db.find_one({"type": "recruit_post"}, {"_id":0})["counter"] + 1
+
+        post_db = db_connector.mongo.db.recruit_post
+
         try:
             # 새 글 생성
             recruit_title = request.json.get("recruit_title")  # 제목
@@ -37,9 +45,9 @@ class RecruitPostCreate(Resource):
             recruit_tags = request.json.get('recruit_tags')  # tags
             recruit_state = request.json.get('recruit_state')  # 상태
 
-            newpost_recruit = {'recruit_title': recruit_title, 'recruit_author': recruit_author,
-                            'recruit_contents': recruit_contents, 'recruit_tags': recruit_tags,
-                            'recruit_state': recruit_state}
+            newpost_recruit = {'recruit_post_number': recruit_post_number, 'recruit_title': recruit_title,
+                            'recruit_author': recruit_author, 'recruit_contents': recruit_contents,
+                            'recruit_tags': recruit_tags, 'recruit_state': recruit_state}
             
             for k, v in newpost_recruit.items():
                 if k != "recruit_tags" and v == None:
@@ -58,13 +66,17 @@ class RecruitPostCreate(Resource):
             # mongoDB에 추가
             # post = db.[colletion_name] # Collection에 접근 후
             # post.insert_one(newpost_recruit).inserted_id  #한 개 저장
-            post_db = db_connector.mongo.db.recruit_post
             post_db.insert(newpost_recruit)
+
+            # 현재 게시물 번호 업데이트
+            counter_db.update_one({"type": "recruit_post"}, {"$set": {"counter": recruit_post_number}})
 
             new_post_res = {
                 "req_path": request.path,
                 "req_result": "Done"
             }
+
+
             return new_post_res
         # DB 저장 중 오류 발생 시 Exception
         except:
