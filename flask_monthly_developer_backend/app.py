@@ -19,6 +19,6 @@ def create_env():
     api = Api(app, version=1.0, title="flask_env", description="flask_env_test")
 
     # namespace를 추가합니다.
-    api.add_namespace(recruit_board.Recruit, '/recruit')
+    api.add_namespace(recruit_board.recruit_ns, '/recruit')
     return app
 
