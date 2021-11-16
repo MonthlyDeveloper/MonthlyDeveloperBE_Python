@@ -95,25 +95,39 @@ class RecruitPostSearch(Resource):
     @Recruit.expect(search_parse)
     def get(self):
 
-        # 글쓴이로 글 찾기
-        author = search_parse.parse_args()['recruit_author']
-        if author is not None:
-            data = [doc for doc in db_connector.mongo.db.recruit_post.find({'recruit_author': author})]
+        try:
+            # [전체] 에서 특정 단어가 들어간 경우를 찾는 경우
+            # 특정 단어가 포함된 글을 찾기 위해서 .*[특정단어].* 형태로 만듬
+
+            recruit_all = '.*' + search_parse.parse_args()['recruit_all'] + '.*'
+            data = [doc for doc in
+                    db_connector.mongo.db.recruit_post.find({"$or": [{"recruit_title": {'$regex': recruit_all}},
+                                                                     {"recruit_author": {'$regex': recruit_all}},
+                                                                     {"recruit_contents": {'$regex': recruit_all}},
+                                                                     {"recruit_tags": {'$regex': recruit_all}},
+                                                                     ]})]
             return json.loads(json_util.dumps(data))
+
+        except:
+            # 아무것도 쓰지 않고 넘긴 경우
+            data_all = [doc for doc in db_connector.mongo.db.recruit_post.find()]
+
+            new_post_res = {
+                "req_path": request.path,
+                "req_result": "No word",
+                "result": json.loads(json_util.dumps(data_all))
+            }
+            return new_post_res
+
+        # 글쓴이로 글 찾기
 
         # tags로 글 찾기
 
-        # contents 들어가는 단어로 글 찾기
+        # contents 글 찾기
 
         # state로 글 찾기
 
-        state = search_parse.parse_args()['recruit_state']
-        if state is not None:
-            data = [doc for doc in db_connector.mongo.db.recruit_post.find({'recruit_state': state})]
-            return json.loads(json_util.dumps(data))
         # title로 글 찾기
-
-
 
 
 # 게시글 수정
