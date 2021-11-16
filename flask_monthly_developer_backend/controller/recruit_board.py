@@ -17,7 +17,7 @@ introduce = Recruit.model('Introduce', {
 
 # 특정 게시글을 검색하기 위한 조건
 search_parse = reqparse.RequestParser()
-search_parse.add_argument("recruit_number", type=int, help="게시글 번호")
+search_parse.add_argument("recruit_all", type=str, help="게시글 번호")
 search_parse.add_argument("recruit_author", type=str, help="게시글 작성자")
 search_parse.add_argument("recruit_tags", type=str, help="게시글 태그")
 search_parse.add_argument("recruit_state", type=str, help="게시글 상태")
