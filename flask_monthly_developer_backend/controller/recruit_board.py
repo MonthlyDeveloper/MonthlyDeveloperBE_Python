@@ -1,5 +1,5 @@
 import json
-
+from bson import json_util
 from flask import request, redirect, jsonify
 from flask_restx import Api, Resource, fields, Namespace, reqparse
 
@@ -12,15 +12,18 @@ recruit_post_model = Recruit.recruit_post_model
 
 # 특정 게시글을 검색하기 위한 조건
 search_parse = reqparse.RequestParser()
-search_parse.add_argument("recruit_number", type = int, help ="게시글 번호")
-search_parse.add_argument("recruit_author", type = int, help ="게시글 작성자")
+search_parse.add_argument("recruit_all", type=str, help="게시글 번호")
+search_parse.add_argument("recruit_author", type=str, help="게시글 작성자")
+search_parse.add_argument("recruit_tags", type=str, help="게시글 태그")
+search_parse.add_argument("recruit_state", type=str, help="게시글 상태")
+
 
 # 새로운 게시글 등록 (작성)
 @recruit_ns.route('/new_post', methods=['POST'])
 class RecruitPostCreate(Resource):
     @recruit_ns.expect(recruit_post_model)
     def post(self):
-        
+
         # 응답을 위한 Dict
         new_post_res = {}
 
@@ -28,6 +31,7 @@ class RecruitPostCreate(Resource):
         # 게시글 고유 아이디는 게시글의 등록 순서를 의미
         # 현재 k번 게시글까지 있다고 가정하였을 때 새롭게 등록될 게시글은 k+1번째 게시글임
         counter_db = db_connector.mongo.db.counter
+
         recruit_post_id = counter_db.find_one({"type": "recruit_post"}, {"_id":0})["counter"] + 1
 
         post_db = db_connector.mongo.db.recruit_post
@@ -47,16 +51,16 @@ class RecruitPostCreate(Resource):
             for k, v in newpost_recruit.items():
                 if k != "recruit_tags" and v == None:
                     raise Exception("Missing Parameter")
-            
+
         # 전달받은 Body 중에 누락된 내용이 있다면 Exception 발생
         # 제목, 글쓸이, 내용, 상태는 누락될 수 없음
         except:
             new_post_res = {
-                    "req_path": request.path,
-                    "req_result": "Missing Parameter"
+                "req_path": request.path,
+                "req_result": "Missing Parameter"
             }
             return new_post_res
-        
+
         try:
             # mongoDB에 추가
             # post = db.[colletion_name] # Collection에 접근 후
@@ -71,7 +75,6 @@ class RecruitPostCreate(Resource):
                 "req_result": "Done"
             }
 
-
             return new_post_res
         # DB 저장 중 오류 발생 시 Exception
         except:
@@ -81,14 +84,47 @@ class RecruitPostCreate(Resource):
             }
             return new_post_res
 
+
 # 게시글 검색
 @recruit_ns.route('/search')
 class RecruitPostSearch(Resource):
     @recruit_ns.expect(search_parse)
     def get(self):
-        print(search_parse.parse_args())
-        data = [doc for doc in db_connector.mongo.db.recruit_post.find({}, {"_id":0})]
-        return jsonify(data)
+
+        try:
+            # [전체] 에서 특정 단어가 들어간 경우를 찾는 경우
+            # 특정 단어가 포함된 글을 찾기 위해서 .*[특정단어].* 형태로 만듬
+
+            recruit_all = '.*' + search_parse.parse_args()['recruit_all'] + '.*'
+            data = [doc for doc in
+                    db_connector.mongo.db.recruit_post.find({"$or": [{"recruit_title": {'$regex': recruit_all}},
+                                                                     {"recruit_author": {'$regex': recruit_all}},
+                                                                     {"recruit_contents": {'$regex': recruit_all}},
+                                                                     {"recruit_tags": {'$regex': recruit_all}},
+                                                                     ]})]
+            return json.loads(json_util.dumps(data))
+
+        except:
+            # 아무것도 쓰지 않고 넘긴 경우
+            data_all = [doc for doc in db_connector.mongo.db.recruit_post.find()]
+
+            new_post_res = {
+                "req_path": request.path,
+                "req_result": "No word",
+                "result": json.loads(json_util.dumps(data_all))
+            }
+            return new_post_res
+
+        # 글쓴이로 글 찾기
+
+        # tags로 글 찾기
+
+        # contents 글 찾기
+
+        # state로 글 찾기
+
+        # title로 글 찾기
+
 
 # 게시글 수정
 @recruit_ns.route('/update/<int:recruit_post_id>')
@@ -116,6 +152,7 @@ class RecruitPostUpdate(Resource):
                 "req_result": "Fail"
             } 
             return update_post_res
+
 
 # 게시글 삭제
 @recruit_ns.route('/delete')
