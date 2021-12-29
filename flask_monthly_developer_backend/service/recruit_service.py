@@ -7,16 +7,14 @@ from model import response_model
 
 response_model = response_model.ResponseModel()
 
-def save_post(req_data):
-    # 응답을 위한 Dict
-    new_post_res = {}
 
+def save_post(req_data):
     # 게시글의 고유 아이디 정보
     # 게시글 고유 아이디는 게시글의 등록 순서를 의미
     # 현재 k번 게시글까지 있다고 가정하였을 때 새롭게 등록될 게시글은 k+1번째 게시글임
-    counter_db = db_connector.mongo.db.counter
-    recruit_post_id = counter_db.find_one({"type": "recruit_post"}, {"_id":0})["counter"] + 1
-    post_db = db_connector.mongo.db.recruit_post
+    counter_db = db_connector.mongo.counter
+    recruit_post_id = counter_db.find_one({"type": "recruit_post"}, {"_id": 0})["counter"] + 1
+    post_db = db_connector.mongo.recruit_post
     try:
         # 새 글 생성
         recruit_title = req_data.json.get("recruit_title")  # 제목
@@ -26,9 +24,9 @@ def save_post(req_data):
         recruit_state = req_data.json.get('recruit_state')  # 상태
 
         newpost_recruit = {'recruit_post_id': recruit_post_id, 'recruit_title': recruit_title,
-                        'recruit_author': recruit_author, 'recruit_contents': recruit_contents,
-                        'recruit_tags': recruit_tags, 'recruit_state': recruit_state}
-        
+                           'recruit_author': recruit_author, 'recruit_contents': recruit_contents,
+                           'recruit_tags': recruit_tags, 'recruit_state': recruit_state}
+
         for k, v in newpost_recruit.items():
             if k != "recruit_tags" and v == None:
                 raise Exception("Missing Parameter")
@@ -36,12 +34,12 @@ def save_post(req_data):
     # 제목, 글쓸이, 내용, 상태는 누락될 수 없음
     except:
         return response_model.set_response(req_data.path, 200, "Missing Parameter", None)
-    
+
     try:
         # mongoDB에 추가
         # post = db.[colletion_name] # Collection에 접근 후
         # post.insert_one(newpost_recruit).inserted_id  #한 개 저장
-        post_db.insert(newpost_recruit)
+        post_db.insert_one(newpost_recruit)
         # 현재 게시물 번호 업데이트
         counter_db.update_one({"type": "recruit_post"}, {"$set": {"counter": recruit_post_id}})
 
@@ -53,89 +51,93 @@ def save_post(req_data):
 
 
 def search_post(req_data, search_parse):
-
     # 검색 범위, 검색 단어를 전달받음
     # 이후 범위에 해당 하는 단어를 포함하는 게시물 출력
-    def for_unit_search(search_method, search_word):
+    def for_unit_search(search_method, search_word, search_page):
 
         # 전체 조회
         if search_method == None:
-            data = [doc for doc in db_connector.mongo.db.recruit_post.find({}, {"_id":0})]
+            data = db_connector.mongo.recruit_post.find({}, {"_id": 0}).skip((search_page - 1) * 10).limit(10)
+            data = [doc for doc in data]
 
         # 전체 범위에 대해 검색 (제목 ~ 태그)
         elif search_method == 'all':
-            data = [doc for doc in
-                    db_connector.mongo.db.recruit_post.find({"$or": [{"recruit_title": {'$regex': search_word}},
-                                                                     {"recruit_author": {'$regex': search_word}},
-                                                                     {"recruit_contents": {'$regex': search_word}},
-                                                                     {"recruit_tags": {'$regex': search_word}},
-                                                                     ]}, {"_id":0})]
-        # 특정 범위에 대해 (제목, 작성자 등)
+            data = db_connector.mongo.recruit_post.find({"$or": [{"recruit_title": {'$regex': search_word}},
+                                                                 {"recruit_author": {'$regex': search_word}},
+                                                                 {"recruit_contents": {'$regex': search_word}},
+                                                                 {"recruit_tags": {'$regex': search_word}},
+                                                                 ]}, {"_id": 0}).skip((search_page - 1) * 10).limit(10)
+            data = [doc for doc in data]
+        # 특정 범위에 대해 검색(제목, 작성자 등)
         else:
-            data = [doc for doc in
-                            db_connector.mongo.db.recruit_post.find({search_method: {'$regex': search_word}}, {"_id":0})]
-        
+            data = db_connector.mongo.recruit_post.find({search_method: {'$regex': search_word}}, {"_id": 0}).skip(
+                (search_page - 1) * 10).limit(10)
+            data = [doc for doc in data]
+
         return response_model.set_response(req_data.path, 200, "Done", data)
 
     # 사용 가능한 검색 방식 리스트
-    search_method_list = ["all", "author", "tags", "contents", "title"]
+    search_method_list = ["all", "title", "author", "contents", "tags"]
 
     # Query String으로 검색하고자 하는 범위와 단어를 전달 받음
-    search_method = req_data.args.get('recruit_search_method')
-    search_word = search_parse.parse_args()['recruit_search_word']
+    search_method = search_parse.parse_args()['search_method']
+    search_word = search_parse.parse_args()['search_keyword']
+    search_page = search_parse.parse_args()['page']
+
+    # 사용자가 page 단위에 0 혹은 음수를 집어 넣는 경우
+    # 강제로 1로 초기화
+    if search_page <= 0:
+        search_page = 1
 
     # 검색 방식과 검색 단어가 모두 없다 -> 전체 게시글 조회 (find all)
-    if (search_method == None) and (search_parse.parse_args()['recruit_search_word'] == None):
-        return for_unit_search(None, search_word)
+    if (search_method is None) and (search_word is None):
+        return for_unit_search(None, search_word, search_page)
 
     # 검색 방식과 검색 단어 중 하나라도 없다 -> 검색 불가
-    elif (search_method == None) or (search_parse.parse_args()['recruit_search_word'] == None):
+    elif (search_method is None) or (search_word is None):
         return response_model.set_response(req_data.path, 200, "Fail", "Missing search_method or search_word Parameter")
-    
-    # 검색 방식 검증
+
+    # 이 외에는 지원하는 검색 방식인지 검증
     elif search_method in search_method_list:
         search_word = '.*' + search_word + '.*'
-    # 
+
+    # 전달받은 검색 방식이 "all", "author", "tags", "contents", "title"
+    # 중 해당하는 내용이 없다면 Fail
     else:
         return response_model.set_response(req_data.path, 200, "Fail", "Unknown search_method")
-    
+
     # 전체 범위 검색
     if search_method == "all":
-        return for_unit_search("all", search_word)
+        return for_unit_search("all", search_word, search_page)
 
     # 글쓴이로 검색
     elif search_method == 'author':
-        return for_unit_search("recruit_author", search_word)
+        return for_unit_search("recruit_author", search_word, search_page)
 
     # 태그로 검색
     elif search_method == 'tags':
-        return for_unit_search("recruit_tags", search_word)
+        return for_unit_search("recruit_tags", search_word, search_page)
 
     # 글 내용으로 검색
     elif search_method == 'contents':
-        return for_unit_search("recruit_contents", search_word)
+        return for_unit_search("recruit_contents", search_word, search_page)
 
     # 제목으로 검색
     elif search_method == 'title':
-        return for_unit_search("recruit_title", search_word)
+        return for_unit_search("recruit_title", search_word, search_page)
+
 
 def update_post(req_data):
-    # 응답을 위한 Dict
-    update_post_res = {}
     try:
-        update_data = req_data.json  
-        db_connector.mongo.db.recruit_post.update({"recruit_post_id": update_data["recruit_post_id"]}, update_data)
-            
-        update_post_res = {
-            "req_path": req_data.path,
-            "req_result": "Done"
-        }
+        update_data = req_data.json
+        db_connector.mongo.recruit_post.update({"recruit_post_id": update_data["recruit_post_id"]}, update_data)
 
-        return update_post_res
+        return response_model.set_response(req_data.path, 200, "Done", update_data["recruit_post_id"])
 
     except:
-        update_post_res = {
-            "req_path": req_data.path,
-            "req_result": "Fail"
-        } 
-        return update_post_res
+        return response_model.set_response(req_data.path, 200, "Fail", None)
+
+
+def delete_post(req_data):
+    db_connector.mongo.db.recruit_post.delete_one({"recruit_state": "구인중"})
+    return "is RecruitPostDelete"
