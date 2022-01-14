@@ -30,6 +30,7 @@ def save_post(req_data):
         for k, v in newpost_recruit.items():
             if k != "recruit_tags" and v == None:
                 raise Exception("Missing Parameter")
+    
     # 전달받은 Body 중에 누락된 내용이 있다면 Exception 발생
     # 제목, 글쓸이, 내용, 상태는 누락될 수 없음
     except:
@@ -50,7 +51,7 @@ def save_post(req_data):
         return response_model.set_response(req_data.path, 200, "DB save Failed", None)
 
 
-def search_post(req_data, search_parse):
+def search_post(req_data):
     # 검색 범위, 검색 단어를 전달받음
     # 이후 범위에 해당 하는 단어를 포함하는 게시물 출력
     def for_unit_search(search_method, search_word, search_page):
@@ -80,9 +81,20 @@ def search_post(req_data, search_parse):
     search_method_list = ["all", "title", "author", "contents", "tags"]
 
     # Query String으로 검색하고자 하는 범위와 단어를 전달 받음
-    search_method = search_parse.parse_args()['search_method']
-    search_word = search_parse.parse_args()['search_keyword']
-    search_page = search_parse.parse_args()['page']
+    try:
+        search_method = req_data.args["search_method"]
+    except:
+        search_method = None
+
+    try:
+        search_word = req_data.args['search_keyword']
+    except:
+        search_word = None
+    
+    try:
+        search_page = int(req_data.args['page'])
+    except:
+        search_page = None
 
     # 사용자가 page 단위에 0 혹은 음수를 집어 넣는 경우
     # 강제로 1로 초기화
@@ -126,12 +138,12 @@ def search_post(req_data, search_parse):
     elif search_method == 'title':
         return for_unit_search("recruit_title", search_word, search_page)
 
-
 def update_post(req_data):
+    # 기존 게시글 수정
+    # 수정하려는 게시글의 번호와 내용을 전달받음
     try:
         update_data = req_data.json
         db_connector.mongo.recruit_post.update({"recruit_post_id": update_data["recruit_post_id"]}, update_data)
-
         return response_model.set_response(req_data.path, 200, "Done", update_data["recruit_post_id"])
 
     except:
@@ -139,9 +151,16 @@ def update_post(req_data):
 
 
 def delete_post(req_data):
+    # 기존 게시글 삭제
+    # 삭제하고자 하는 게시글의 번호를 전달 받아 삭제
     try:
         delete_data = req_data.json
-        db_connector.mongo.recruit_post.delete_one({"recruit_post_id": delete_data["recruit_post_id"]})
-        return response_model.set_response(req_data.path, 200, "Done", delete_data["recruit_post_id"])
-    except:
+        delete_result = db_connector.mongo.recruit_post.delete_one({"recruit_post_id": delete_data["recruit_post_id"]})
+        
+        if delete_result.deleted_count == 0:
+            return response_model.set_response(req_data.path, 200, "Fail", f"No recruit_post_id: {delete_data['recruit_post_id']}")
+        else:
+            return response_model.set_response(req_data.path, 200, "Done", delete_data["recruit_post_id"])
+    except Exception as e:
+        print(e)
         return response_model.set_response(req_data.path, 200, "Fail", None)

@@ -19,7 +19,7 @@ github_access_code_parser = Auth.github_access_code_parser
 create_jwt_model = Auth.create_jwt_model
 validate_jwt = Auth.validate_jwt
 
-# 사용자가 로그인 할 때 접속하는 URL (http://localhost:5000/login/test)
+# 사용자가 로그인 할 때 접속하는 URL (http://localhost:5000/login/github)
 @auth_ns.route('/github', methods=['GET'], doc=False)
 class Github(Resource):
     def get(self):
@@ -47,6 +47,9 @@ class RedirectTest(Resource):
         if AuthenticationService.vaildate_user(user_login, user_email):
             # 신규회원, 기존회원일 시 토큰 생성
             access_token = TokenService.create_token(request, user_login, user_email)
+        else:
+            # 회원이 아니라면 None값 반환
+            access_token = None
         
         # 응답
         return access_token
