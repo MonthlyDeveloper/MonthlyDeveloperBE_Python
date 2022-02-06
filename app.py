@@ -1,21 +1,17 @@
 from flask import Flask
 from flask_restx import Api
 
-import os
+from controller import recruitment_board_controller, login_controller, test_controller
 
-from controller import recruit_board, authentication, test
 
 def create_env():
     app = Flask(__name__)
 
-    app.config['JSON_AS_ASCII'] = False
-    app.config['SECRET_KEY'] = os.urandom(24)
-
-    api = Api(app, version=1.0, title="flask_env", description="flask_env_test")
+    api = Api(app, version="1.0", title="flask_env", description="flask_env_test")
 
     # namespace를 추가합니다.
-    api.add_namespace(recruit_board.recruit_ns, '/recruit')
-    api.add_namespace(authentication.auth_ns, '/login')
-    api.add_namespace(test.test_ns, '/test')
+    api.add_namespace(recruitment_board_controller.recruitment_ns, '/recruit')
+    api.add_namespace(login_controller.login_ns, '/login')
+    api.add_namespace(test_controller.test_ns, '/test')
 
     return app

@@ -1,12 +1,11 @@
-from functools import wraps
 from flask import request
+from functools import wraps
 
 from service.token_service import TokenService
-from model import response_model
+from model.response_model import ResponseModel
 
-response_model = response_model.ResponseModel()
 
-def token_require(func):
+def token_validator(func):
     @wraps(func)
     def validate(*args, **kwargs):
         try:
@@ -14,7 +13,7 @@ def token_require(func):
             if TokenService.validate_token(token):
                 return func(*args, **kwargs)
             else:
-                return response_model.set_response(request.path, 200, "Unknown Header/Token", None)
+                return ResponseModel.set_response(request.path, 200, "Unknown Header/Token", None)
         except:
-            return response_model.set_response(request.path, 200, "Not Found Header/Token", None)
+            return ResponseModel.set_response(request.path, 200, "Not Found Header/Token", None)
     return validate

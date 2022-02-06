@@ -1,18 +1,18 @@
 import requests
+from config.config import Config
 
-from config.env import Env
+from model.user_model import UserModel
 
 
-class AuthenticationService():
-
+class GithubRequest():
     """
         Access Code를 활용하여 Access Token을 요청하는 부분
     """
     def request_access_token(access_code):
         
         access_token_param = {
-            "client_id": Env.GITHUB_CLIENT_ID,
-            "client_secret": Env.GITHUB_CLIENT_SECRET,
+            "client_id": Config.GITHUB_CLIENT_ID,
+            "client_secret": Config.GITHUB_CLIENT_SECRET,
             "code": access_code
         }
 
@@ -42,15 +42,9 @@ class AuthenticationService():
         info_req_url = f"https://api.github.com/user"
         info_res = requests.get(info_req_url, headers=info_header)
 
-        user_login = info_res.json()['login']
-        user_email = info_res.json()['email']
+        user_info = UserModel(info_res.json()['id'], 
+                                info_res.json()['login'], 
+                                info_res.json()['email'])
 
         # 응답
-        return user_login, user_email
-
-    """
-        로그인한 사람이 사용자(서비스 이용자)인지 확인하는 함수
-        임시로 True 만을 반환하도록 설정
-    """
-    def vaildate_user(user_login, user_email):
-        return True
+        return user_info
