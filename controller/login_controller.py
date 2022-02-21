@@ -42,9 +42,9 @@ class GithubCallback(Resource):
         user_info = LoginService.is_existing_user(github_user_info)
         if isinstance(user_info, dict):
             print("Already")
-            return TokenService.create_token(request, user_info)
+            return TokenService.generate_token(request, user_info)
         else:
             print("New")
             LoginService.save_user(github_user_info)
             user_info = LoginService.is_existing_user(github_user_info)
-            return TokenService.create_token(request, user_info)
+            return TokenService.generate_token(request, user_info)

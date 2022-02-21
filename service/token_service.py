@@ -4,12 +4,20 @@ from datetime import datetime, timedelta
 from config.config import Config
 from model.response_model import ResponseModel
 
+
 class TokenService:
 
-    def create_token(req_data, user_info):
+    def generate_token(req_data, user_info):
         user_info["exp"] = datetime.utcnow() + timedelta(minutes=1)
-        created_token = jwt.encode(user_info, Config.SECRET_KEY, Config.ALGORITHM)
-        return ResponseModel.set_response(req_data.path, 200, "Done", created_token)
+        access_token = jwt.encode(user_info, Config.SECRET_KEY, Config.ALGORITHM)
+        refresh_token = jwt.encode(dict(), Config.SECRET_KEY, Config.ALGORITHM)
+
+        token = {
+            "access_token": access_token,
+            "refresh_token": refresh_token
+        }
+
+        return ResponseModel.set_response(req_data.path, 200, "Done", token)
 
     def validate_token(token):
         try:

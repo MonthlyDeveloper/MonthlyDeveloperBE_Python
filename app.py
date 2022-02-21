@@ -1,7 +1,7 @@
 from flask import Flask
 from flask_restx import Api
 
-from controller import recruitment_board_controller, login_controller, test_controller
+from controller import recruitment_board_controller, login_controller, token_controller, test_controller
 
 
 def create_env():
@@ -12,6 +12,7 @@ def create_env():
     # namespace를 추가합니다.
     api.add_namespace(recruitment_board_controller.recruitment_ns, '/recruit')
     api.add_namespace(login_controller.login_ns, '/login')
+    api.add_namespace(token_controller.token_ns, '/token')
     api.add_namespace(test_controller.test_ns, '/test')
 
     return app
