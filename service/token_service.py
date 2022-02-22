@@ -10,7 +10,10 @@ class TokenService:
     def generate_token(req_data, user_info):
         user_info["exp"] = datetime.utcnow() + timedelta(minutes=1)
         access_token = jwt.encode(user_info, Config.SECRET_KEY, Config.ALGORITHM)
-        refresh_token = jwt.encode(dict(), Config.SECRET_KEY, Config.ALGORITHM)
+
+        refresh_data = dict()
+        refresh_data["exp"] = datetime.utcnow() + timedelta(minutes=2)
+        refresh_token = jwt.encode(refresh_data, Config.SECRET_KEY, Config.ALGORITHM)
 
         token = {
             "access_token": access_token,
