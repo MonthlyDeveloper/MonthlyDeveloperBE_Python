@@ -9,6 +9,8 @@ from model.login_model import LoginModel
 from service.login_service import LoginService
 from service.token_service import TokenService
 
+from model.response_model import ResponseModel
+
 """
 Authlib을 사용하지 않고 구현
 로그인 URL: ~/login/github
@@ -40,11 +42,14 @@ class GithubCallback(Resource):
         
         # 로그인을 시도한 사람이 사용자(서비스 이용자)인지 확인
         user_info = LoginService.is_existing_user(github_user_info)
+        
         if isinstance(user_info, dict):
             print("Already")
-            return TokenService.generate_token(request, user_info)
+            token_set = TokenService.generate_token(request, user_info)
+            LoginService.refresh_existing_user_token(user_info["github_id"], token_set["refresh_token"])
+            return ResponseModel.set_response(request.path, 200, "Already User", token_set)
         else:
             print("New")
-            LoginService.save_user(github_user_info)
-            user_info = LoginService.is_existing_user(github_user_info)
-            return TokenService.generate_token(request, user_info)
+            token_set = TokenService.generate_token(request, github_user_info.toDict())
+            LoginService.save_user(github_user_info, token_set["refresh_token"])
+            return ResponseModel.set_response(request.path, 200, "New User", token_set)

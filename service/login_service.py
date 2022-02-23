@@ -24,8 +24,13 @@ class LoginService:
                 return user_info
         else:
             return False
-    
-    def save_user(user_info):
+
+    def refresh_existing_user_token(github_id, refresh_token):
+        db_users = Connector.mongodb_connector().users
+        db_users.update_one({"github_id": github_id}, {"$set": {"token": refresh_token}})
+        return True
+
+    def save_user(user_info, refresh_token):
         # 서비스에서 고객의 ID는 순차적으로 부여함
         db_user_counter = Connector.mongodb_connector().counter
         user_id = db_user_counter.find_one({"type": "users"}, {"_id": 0})["counter"] + 1
@@ -38,7 +43,8 @@ class LoginService:
                 "login": str(user_info.login),
                 "email": str(user_info.email),
                 "approval": True,
-                "role": "user"
+                "role": "user",
+                "token": refresh_token
             }
             db_users.insert_one(user_info)
             db_user_counter.update_one({"type": "users"}, {"$set": {"counter": user_id}})

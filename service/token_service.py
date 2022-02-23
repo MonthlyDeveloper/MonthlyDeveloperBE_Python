@@ -20,7 +20,7 @@ class TokenService:
             "refresh_token": refresh_token
         }
 
-        return ResponseModel.set_response(req_data.path, 200, "Done", token)
+        return token
 
     def validate_token(token):
         try:

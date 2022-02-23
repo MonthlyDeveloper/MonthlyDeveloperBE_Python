@@ -6,3 +6,10 @@ class UserModel():
     
     def toString(self):
         return f"user id: {self.id}, user login: {self.login}, user email: {self.login}"
+
+    def toDict(self):
+        return {
+            "id": self.id,
+            "login": self.login,
+            "email": self.email
+        }
