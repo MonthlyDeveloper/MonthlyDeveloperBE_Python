@@ -2,7 +2,7 @@ from flask import request
 
 from config.connector import Connector
 from model.response_model import ResponseModel
-from service.token_service import TokenService
+from service.token_utils import TokenService
 
 
 class RecruitmentBoardService:

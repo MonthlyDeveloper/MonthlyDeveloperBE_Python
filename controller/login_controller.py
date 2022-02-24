@@ -7,7 +7,7 @@ from flask_restx import Resource, Namespace
 from model.login_model import LoginModel
 
 from service.login_service import LoginService
-from service.token_service import TokenService
+from service.token_utils import TokenUtils
 
 from model.response_model import ResponseModel
 
@@ -45,11 +45,11 @@ class GithubCallback(Resource):
         
         if isinstance(user_info, dict):
             print("Already")
-            token_set = TokenService.generate_token(request, user_info)
+            token_set = TokenUtils.generate_token(request, user_info)
             LoginService.refresh_existing_user_token(user_info["github_id"], token_set["refresh_token"])
             return ResponseModel.set_response(request.path, 200, "Already User", token_set)
         else:
             print("New")
-            token_set = TokenService.generate_token(request, github_user_info.toDict())
+            token_set = TokenUtils.generate_token(request, github_user_info.toDict())
             LoginService.save_user(github_user_info, token_set["refresh_token"])
             return ResponseModel.set_response(request.path, 200, "New User", token_set)

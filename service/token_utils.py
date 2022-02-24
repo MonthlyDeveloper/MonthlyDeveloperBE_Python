@@ -2,12 +2,11 @@ import jwt
 from datetime import datetime, timedelta
 
 from config.config import Config
-from model.response_model import ResponseModel
 
 
-class TokenService:
-
-    def generate_token(req_data, user_info):
+class TokenUtils:
+    @staticmethod
+    def generate_token(user_info):
         user_info["exp"] = datetime.utcnow() + timedelta(minutes=1)
         access_token = jwt.encode(user_info, Config.SECRET_KEY, Config.ALGORITHM)
 
@@ -19,9 +18,9 @@ class TokenService:
             "access_token": access_token,
             "refresh_token": refresh_token
         }
-
         return token
 
+    @staticmethod
     def validate_token(token):
         try:
             jwt.decode(token, Config.SECRET_KEY, Config.ALGORITHM)
@@ -35,14 +34,7 @@ class TokenService:
         except Exception:
             return False
 
-    def get_user_role(token):
-        user_data = jwt.decode(token, Config.SECRET_KEY, Config.ALGORITHM)
-        return user_data["role"]
-
-    def get_user_approval(token):
-        user_data = jwt.decode(token, Config.SECRET_KEY, Config.ALGORITHM)
-        return user_data["approval"]
-
+    @staticmethod
     def get_user(token):
         user_info = jwt.decode(token, Config.SECRET_KEY, Config.ALGORITHM)
         return user_info

@@ -1,7 +1,7 @@
 from flask import request
 from flask_restx import Resource
 from flask_restx import fields, Namespace, reqparse
-from service.token_service import TokenService
+from service.token_utils import TokenService
 
 token_ns = Namespace("Token Service", description="토큰 관련 API")
 

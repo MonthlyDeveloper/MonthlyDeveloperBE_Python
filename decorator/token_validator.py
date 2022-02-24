@@ -1,7 +1,7 @@
 from flask import request
 from functools import wraps
 
-from service.token_service import TokenService
+from service.token_utils import TokenService
 from model.response_model import ResponseModel
 
 
