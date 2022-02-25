@@ -2,7 +2,7 @@ from flask import request
 
 from config.connector import Connector
 from model.response_model import ResponseModel
-from service.token_utils import TokenService
+from service.token_utils import TokenUtils
 
 
 class RecruitmentBoardService:
@@ -17,7 +17,7 @@ class RecruitmentBoardService:
     def create_post(self, req_data: request) -> dict:
         # 전달 받은 토큰에서 유저 정보를 가져옴
         user_token = request.headers["Header"]
-        user_info = TokenService.get_user(user_token)
+        user_info = TokenUtils.get_user(user_token)
 
         # 유저 권한이 사용자일 때만 글 작성이 가능
         # 예) 게스트(guest)는 글 작성 불가능
@@ -53,7 +53,7 @@ class RecruitmentBoardService:
     def read_post(self, req_data, post_id):
         # 전달 받은 토큰에서 유저 정보를 가져옴
         user_token = req_data.headers["Header"]
-        user_info = TokenService.get_user(user_token)
+        user_info = TokenUtils.get_user(user_token)
 
         # 특정 게시글 조회는 회원만 조회가 가능
         if user_info["role"] == "user":
@@ -173,7 +173,7 @@ class RecruitmentBoardService:
     def update_post(self, req_data):
         # 전달 받은 토큰에서 유저 정보를 가져옴
         user_token = req_data.headers["Header"]
-        user_info = TokenService.get_user(user_token)
+        user_info = TokenUtils.get_user(user_token)
 
         # 수정 될 새로운 데이터
         new_data = req_data.json
@@ -195,7 +195,7 @@ class RecruitmentBoardService:
     def delete_post(self, req_data):
         # 전달 받은 토큰에서 유저 정보를 가져옴
         user_token = req_data.headers["Header"]
-        user_info = TokenService.get_user(user_token)
+        user_info = TokenUtils.get_user(user_token)
 
         # 삭제하고자 하는 데이터
         delete_data = req_data.json

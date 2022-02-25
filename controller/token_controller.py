@@ -1,7 +1,7 @@
 from flask import request
 from flask_restx import Resource
 from flask_restx import fields, Namespace, reqparse
-from service.token_utils import TokenService
+from service.token_utils import TokenUtils
 
 token_ns = Namespace("Token Service", description="토큰 관련 API")
 
@@ -31,7 +31,7 @@ class RegenerateToken(Resource):
             try:
                 jwt.decode(user_refresh_token, Config.SECRET_KEY, Config.ALGORITHM)
                 user_info.pop("exp")
-                return TokenService.generate_token(request, user_info)
+                return TokenUtils.generate_token(request, user_info)
             except jwt.exceptions.ExpiredSignatureError:
                 return ResponseModel.set_response(request.path, 200, "Refresh Token Expired", None)
             except jwt.exceptions.InvalidSignatureError:
@@ -47,7 +47,7 @@ class RegenerateToken(Resource):
             try:
                 jwt.decode(user_refresh_token, Config.SECRET_KEY, Config.ALGORITHM)
                 user_info.pop("exp")
-                return TokenService.generate_token(request, user_info)
+                return TokenUtils.generate_token(user_info)
             # 유효하지 않다면 재발급 실패
             except jwt.exceptions.ExpiredSignatureError:
                 return ResponseModel.set_response(request.path, 200, "Refresh Token Expired", None)

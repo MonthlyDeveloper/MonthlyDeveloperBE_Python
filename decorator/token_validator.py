@@ -1,7 +1,7 @@
 from flask import request
 from functools import wraps
 
-from service.token_utils import TokenService
+from service.token_utils import TokenUtils
 from model.response_model import ResponseModel
 
 
@@ -10,7 +10,7 @@ def token_validator(func):
     def validate(*args, **kwargs):
         try:
             token = request.headers["Header"]
-            if TokenService.validate_token(token):
+            if TokenUtils.validate_token(token):
                 return func(*args, **kwargs)
             else:
                 return ResponseModel.set_response(request.path, 200, "Unknown Header/Token", None)
