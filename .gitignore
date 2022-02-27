@@ -1,15 +1,10 @@
 ### custom ignore
 .DS_Store
 
-/_db
-flask_venv/*
+.idea/*
+_flask_venv/*
+config/*
+
 */__pycache__/*
-*/logs/*
 
 *.pyc
-
-.idea/
-
-.env
-config.py
-dependency.py
